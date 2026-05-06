@@ -42,6 +42,8 @@ from src.features.preprocessing import (
     ALL_FEATURES,
 )
 from src.utils.config import MODEL_DIR, load_all_configs
+from src.data.mapping import canonicalise_dataframe
+from src.features.preprocessing import enrich_from_icc
 
 
 CONFIG = load_all_configs()
@@ -217,16 +219,64 @@ def load_or_generate_dataset(input_path: Path, n_records: int, force_generate: b
     print(f"[INFO] Loading dataset from: {input_path}")
     return load_tabular_file(input_path)
 
-
 def prepare_dataset(df: pd.DataFrame) -> pd.DataFrame:
+    # 🔴 Preserve original labels BEFORE canonicalisation
+    original_labels = {}
+    preserve_cols = [
+        "record_id",
+        "is_problematic",
+        "anomaly_class",
+        "anomaly_count",
+    ]
+
+    for col in preserve_cols:
+        if col in df.columns:
+            original_labels[col] = df[col].copy()
+
+    # 🔹 Canonical pipeline
+    df, _ = canonicalise_dataframe(df)
+    df = enrich_from_icc(df)
     df = run_rule_engine(df.copy())
 
-    missing_cols = [col for col in ALL_FEATURES + ["is_problematic", "anomaly_class"] if col not in df.columns]
+    # 🔴 Restore original labels after canonicalisation
+    for col, values in original_labels.items():
+        df[col] = values.values
+
+    # 🔴 Proper label cleanup (NO LEAKAGE)
+    df["is_problematic"] = (
+        pd.to_numeric(df["is_problematic"], errors="coerce")
+        .fillna(0)
+        .astype(int)
+    )
+
+    df["anomaly_class"] = (
+        df["anomaly_class"]
+        .fillna("none")
+        .astype(str)
+    )
+
+    df["anomaly_count"] = (
+        pd.to_numeric(df["anomaly_count"], errors="coerce")
+        .fillna(0)
+        .astype(int)
+    )
+
+    # 🔴 Verify anomaly diversity survives
+    print("\n=== Label Distribution ===")
+    print(df["is_problematic"].value_counts(dropna=False))
+
+    print("\n=== Anomaly Class Distribution ===")
+    print(df["anomaly_class"].value_counts(dropna=False))
+
+    missing_cols = [
+        col for col in ALL_FEATURES + ["is_problematic", "anomaly_class"]
+        if col not in df.columns
+    ]
+
     if missing_cols:
         raise ValueError(f"Dataset is missing required columns: {missing_cols}")
 
     return df
-
 
 def split_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     train_df, temp_df = train_test_split(
@@ -249,6 +299,12 @@ def split_dataset(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Data
 def fit_models(train_df: pd.DataFrame):
     X_train = train_df[ALL_FEATURES]
     y_train = train_df["is_problematic"]
+
+    # 🔴 Safety check
+    if y_train.nunique() < 2:
+        raise ValueError(
+            "Training labels contain only one class."
+        )
 
     preprocessor = build_robust_preprocessor()
     X_train_proc = preprocessor.fit_transform(X_train)
@@ -276,6 +332,11 @@ def fit_models(train_df: pd.DataFrame):
 
 def score_dataframe(df: pd.DataFrame, preprocessor, isolation_forest, classifier) -> pd.DataFrame:
     out = df.copy()
+    # 🔴 Ensure all expected features exist
+    for col in ALL_FEATURES:
+        if col not in out.columns:
+            out[col] = 0
+
     X = out[ALL_FEATURES]
     X_proc = preprocessor.transform(X)
 

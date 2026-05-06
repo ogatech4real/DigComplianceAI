@@ -43,6 +43,10 @@ def apply_models(df: pd.DataFrame, models: dict) -> pd.DataFrame:
     )
     threshold = CONFIG.get("hybrid_threshold", 0.4)
 
+    for col in ALL_FEATURES:
+        if col not in out.columns:
+            out[col] = 0
+
     X = out[ALL_FEATURES]
     X_proc = models["preprocessor"].transform(X)
 
