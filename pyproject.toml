@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "digital-trade-compliance-ai"
+version = "0.1.0"
+description = "Research-aligned hybrid AI prototype for digital trade compliance screening"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  {name = "Adewale Ogabi"}
+]
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*", "services*", "pipelines*", "api*"]

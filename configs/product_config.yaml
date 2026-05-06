@@ -1,0 +1,21 @@
+products:
+  aluminium_ingot:
+    hs_code: "7601"
+    description: "Unwrought aluminium ingot"
+    emissions_range: [1.5, 12.0]
+    price_usd_per_tonne: [1800, 2800]
+  aluminium_sheet:
+    hs_code: "7606"
+    description: "Aluminium sheet"
+    emissions_range: [2.0, 14.0]
+    price_usd_per_tonne: [2200, 3500]
+  aluminium_coil:
+    hs_code: "7606"
+    description: "Aluminium coil"
+    emissions_range: [2.0, 13.5]
+    price_usd_per_tonne: [2100, 3400]
+  aluminium_profile:
+    hs_code: "7604"
+    description: "Aluminium profile"
+    emissions_range: [2.5, 15.0]
+    price_usd_per_tonne: [2500, 4200]

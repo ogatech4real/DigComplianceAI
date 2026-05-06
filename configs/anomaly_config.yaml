@@ -1,0 +1,7 @@
+distribution:
+  none: 0.70
+  missingness: 0.10
+  logical_inconsistency: 0.07
+  plausibility: 0.06
+  documentation_quality: 0.04
+  composite: 0.03

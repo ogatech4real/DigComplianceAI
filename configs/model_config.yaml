@@ -1,0 +1,14 @@
+random_state: 42
+isolation_forest:
+  n_estimators: 200
+  contamination: 0.30
+random_forest:
+  n_estimators: 200
+  max_depth: 10
+  class_weight: balanced
+hybrid_weights:
+  rf: 0.3
+  anomaly: 0.3
+  rules: 0.2
+  interaction: 0.2
+hybrid_threshold: 0.4
